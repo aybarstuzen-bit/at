@@ -1,0 +1,43 @@
+# Pışpışlı Plus – Meta Reklam Metinleri
+
+Link: https://ninnos.com.tr/products/pispis-plus
+Görsel boyutu: 4:5 (2160x2700, Meta'nın akış formatı)
+
+---
+
+## 1) Önce / Sonra – `1-once-sonra.png`
+
+**Ana metin:**
+Gece yarısı yine pışpış mı? 😴
+Pışpışlı Plus bebeğinizin ağladığını algılar ve otomatik olarak pışpış sesi çalar. Bebeğiniz siz kalkmadan yeniden uykuya dalar.
+✔️ Ağlama sensörü ✔️ Kendi sesinizi kaydedin ✔️ 33 rahatlatıcı ses
+
+**Başlık:** Uykusuz geceler geride kalsın
+**Açıklama:** Ağlama sensörlü uyku cihazı
+**Buton:** Daha Fazla Bilgi Al
+
+---
+
+## 2) Müşteri Yorumları ve Güven – `2-guven-yorum.png`
+
+**Ana metin:**
+342 ebeveyn puanladı: 4.7/5 ⭐
+Ağlama sensörü, 33 ses ve 26 saat pil ömrüyle Pışpışlı Plus gece de yolda da bebeğinizin yanında.
+🔒 Güvenli ödeme · 🚚 Ücretsiz kargo · ↩️ Para iade garantisi
+
+**Başlık:** Bebekler mışıl mışıl, anne babalar huzurlu
+**Açıklama:** Koşulsuz iade garantisi
+**Buton:** Şimdi Alışveriş Yap
+
+---
+
+## 3) Kasım İndirimi – `3-kasim-indirimi.png`
+
+**Ana metin:**
+Kasım'a özel %41 indirim! 🎉
+Pışpışlı Plus 4.687 TL yerine 2.749,99 TL.
+Peşin fiyatına 3 taksit, ücretsiz kargo. Fırsat bitmeden yerinizi alın 👇
+
+**Başlık:** %41 indirim – 2.749,99 TL
+**Açıklama:** Peşin fiyatına 3 taksit
+**Buton:** Şimdi Alışveriş Yap
