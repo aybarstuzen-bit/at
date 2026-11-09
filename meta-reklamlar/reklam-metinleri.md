@@ -25,13 +25,13 @@ Pışpışlı Plus bebeğinizin ağladığını algılar ve otomatik olarak pı�
 ## 2) Müşteri Yorumları ve Güven – `2-guven-yorum.png`
 
 **Ana metin:**
+"Bebeğim ağlayıp uyandığında kendiliğinden pışpış sesi açılıyor ve bebeğim tekrar uykuya dalabiliyor." 💤
 342 ebeveyn puanladı: 4.7/5 ⭐
-Ağlama sensörü, 33 ses ve 26 saat pil ömrüyle Pışpışlı Plus gece de yolda da bebeğinizin yanında.
-🔒 Güvenli ödeme · 🚚 Ücretsiz kargo · ↩️ Para iade garantisi
+🚚 Ücretsiz kargo · ↩️ Para iade garantisi · 🔒 Güvenli ödeme
 
-**Başlık:** Bebekler mışıl mışıl, anne babalar huzurlu
-**Açıklama:** Koşulsuz iade garantisi
-**Buton:** Şimdi Alışveriş Yap
+**Başlık:** Anneler anlatıyor, bebekler uyuyor
+**Açıklama:** 4.7/5 · 342 ebeveyn puanı
+**Buton:** Daha Fazla Bilgi Al
 
 ---
 
