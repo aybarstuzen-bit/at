@@ -1,7 +1,11 @@
 # Pışpışlı Plus – Meta Reklam Metinleri
 
 Link: https://ninnos.com.tr/products/pispis-plus
-Görsel boyutu: 4:5 (2160x2700, Meta'nın akış formatı)
+Görseller:
+- `feed-4x5/` → Facebook/Instagram akış (2160x2700)
+- `reels-9x16/` → Reels ve Hikâye (2160x3840). Üst ~%14 ve alt ~%35 alan Instagram arayüzüyle örtüşebileceği için önemli yazılar ortada tutuldu.
+
+Meta'da aynı reklama iki boyutu birlikte yükleyin ("yerleşime göre görsel özelleştir"); aynı metinler ikisi için de geçerli.
 
 ---
 
