@@ -1,4 +1,33 @@
-# Paket Seçici (Bundle Offers) – Uygulamasız Shopify Snippet
+# ÖNERİLEN: Varyant Modu (indirim kurulumu gerekmez)
+
+`snippets/bundle-offers-varyant.liquid` – her paket ürünün ayrı bir varyantıdır, sepete **doğrudan paket fiyatıyla** girer (2 Adet = 1.279,99 TL, 3 Adet = 1.879,99 TL). İndirim tanımlamaya gerek yoktur.
+
+## 1. Ürün varyantlarını oluşturun
+Admin → Ürünler → ürününüz → **Varyantlar → Seçenek ekle**
+- Seçenek adı: **Paket**
+- Değerler: **1 Adet**, **2 Adet**, **3 Adet**
+
+| Varyant | Fiyat | Karşılaştırma fiyatı | Stok |
+|---|---|---|---|
+| 1 Adet | 779,99 | 1.210,00 | ayrı ayrı girin |
+| 2 Adet | 1.279,99 | 2.420,00 | |
+| 3 Adet | 1.879,99 | 3.630,00 | |
+
+Ürünün renk vb. başka bir seçeneği varsa sorun değil; snippet seçili rengi koruyarak doğru paketi bulur.
+
+## 2. Snippet'i ekleyin
+1. Kodu düzenle → Snippets → **Yeni snippet** → adı `bundle-offers-varyant` → dosya içeriğini yapıştırın.
+2. Özelleştir → Ürün şablonu → **Blok ekle → Özel Liquid**:
+   ```liquid
+   {% render 'bundle-offers-varyant', product: product %}
+   ```
+3. Bloğu "Satın al düğmeleri"nin üstüne taşıyın. Eski `bundle-offers` bloğunu ve önceden kurduysanız paket otomatik indirimlerini kaldırın.
+
+Temanın kendi "Paket" seçicisi ve adet (+/-) alanı otomatik gizlenir; sepete her zaman seçili paket varyantından **1 adet** eklenir. Ayarlar snippet'in en üstündedir (`bo_option_name`, `bo_default_qty` vb.). Varyant değerlerini farklı yazdıysanız (örn. "2'li Paket"), `bo_tiers` listesindeki 2. alanı aynısıyla değiştirin.
+
+---
+
+# Alternatif: Adet Modu (otomatik indirim gerektirir)
 
 Ücretli bundle uygulamasının "Birlikte al, daha çok kazan" paket görünümünü birebir veren, **uygulama gerektirmeyen** Liquid snippet'i.
 
