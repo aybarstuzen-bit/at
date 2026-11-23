@@ -42,7 +42,7 @@ Snippet, seçilen paketin adedini sepete ekler. İndirimin ödeme sayfasında ge
 ## 4. Özelleştirme
 Snippet'in en üstündeki **AYARLAR** bölümünden:
 - `bo_heading` – başlık metni
-- `bo_default_qty` – sayfa açıldığında seçili gelen paket (örn. `2` → "En Çok Satan" seçili gelir)
+- `bo_default_qty` – sayfa açıldığında seçili gelen paket (şu an `2` → "En Çok Satan" seçili gelir)
 - `bo_hide_theme_qty` – temanın +/- adet seçicisini gizler
 - `bo_tiers` – paket satırları: `Adet ~ Başlık ~ Alt yazı ~ İndirim TL ~ Üst etiket ~ Alt şerit ~ Rozet(evet/hayir)`
   - Alt yazıda `[birim]` adet başı fiyatı, `[adet]` adedi gösterir.
