@@ -1,0 +1,578 @@
+{%- comment -%}
+  ============================================================================
+  BUNDLE OFFERS – "Birlikte al, daha çok kazan" paket seçici
+  Ücretli bundle uygulamasının yerine geçen, uygulamasız (app-free) snippet.
+
+  KULLANIM
+    Tema düzenleyici > Ürün sayfası > Blok ekle > "Özel Liquid" ve içine:
+      {% render 'bundle-offers', product: product %}
+    (Bloğu "Satın al düğmeleri" bloğunun hemen ÜSTÜNE taşıyın.)
+
+  FİYATLANDIRMA (ÖNEMLİ)
+    Bu snippet sadece görüntüyü ve sepete eklenen ADEDİ yönetir.
+    Sepette indirimin gerçekten düşmesi için Shopify'da ÜCRETSİZ "otomatik
+    indirimler" tanımlayın (README'ye bakın). Aşağıdaki "İndirim (TL)" değerleri
+    Shopify'daki otomatik indirim tutarlarıyla AYNI olmalıdır.
+  ============================================================================
+{%- endcomment -%}
+
+{%- comment -%} ======================= AYARLAR ======================= {%- endcomment -%}
+{%- liquid
+  # Başlık (boş bırakırsanız gizlenir)
+  assign bo_heading = 'Birlikte al, daha çok kazan'
+
+  # Sayfa açıldığında seçili gelecek paketin ADEDİ (1, 2 veya 3 ...)
+  assign bo_default_qty = 1
+
+  # Temanın kendi adet (+/-) seçicisini gizle (true/false)
+  assign bo_hide_theme_qty = true
+
+  # Tasarruf kutusundaki metin. [tutar] yerine tasarruf yazılır.
+  assign bo_savings_text = 'Bu siparişte [tutar] tasarruf ediyorsunuz'
+
+  # Rozet metni. [yuzde] yerine indirim yüzdesi yazılır.
+  assign bo_badge_text = 'İNDİRİM [yuzde]%'
+-%}
+
+{%- comment -%}
+  PAKETLER – her satır bir paket. Alanlar "~" ile ayrılır:
+    Adet ~ Başlık ~ Alt yazı ~ İndirim (TL, normal fiyattan düşülecek toplam tutar) ~ Üst etiket ~ Alt şerit ~ Rozet (evet/hayir)
+
+  Alt yazıda kullanılabilecek kısayollar:
+    [birim]  -> paketteki adet başı fiyat   (örn: "Adet başı 640.00TL")
+    [adet]   -> paketteki adet sayısı
+
+  Örnek hesap (ürün fiyatı 779.99TL):
+    2 adet normalde 1,559.98TL -> 1,279.99TL olsun -> İndirim = 279.99
+    3 adet normalde 2,339.97TL -> 1,879.99TL olsun -> İndirim = 459.98
+{%- endcomment -%}
+{%- capture bo_tiers -%}
+1 ~ 1 Adet ~ 1 Aylık Paket ~ 0 ~  ~  ~ hayir
+2 ~ 2 Adet ~ Adet başı [birim] ~ 279.99 ~ En Çok Satan! ~ Kargo Bizden! + ÜCRETSİZ SÜRPRİZ HEDİYE! ~ evet
+3 ~ 3 Adet ~ 3 Aylık Paket ~ 459.98 ~  ~  ~ hayir
+{%- endcapture -%}
+{%- comment -%} ===================== AYARLAR SONU ===================== {%- endcomment -%}
+
+{%- if product != blank -%}
+{%- liquid
+  assign bo_variant = product.selected_or_first_available_variant
+  assign bo_uid = 'bo-' | append: section.id | append: '-' | append: product.id
+  assign bo_lines = bo_tiers | strip | newline_to_br | split: '<br />'
+
+  # Varsayılan paket geçerli mi kontrol et
+  assign bo_default_found = false
+  for bo_line in bo_lines
+    assign bo_f = bo_line | split: '~'
+    assign bo_q = bo_f[0] | strip | plus: 0
+    if bo_q == bo_default_qty
+      assign bo_default_found = true
+    endif
+  endfor
+  if bo_default_found == false
+    assign bo_first = bo_lines.first | split: '~'
+    assign bo_default_qty = bo_first[0] | strip | plus: 0
+  endif
+-%}
+
+<div
+  class="bo"
+  id="{{ bo_uid }}"
+  data-bundle-offers
+  data-money-format="{{ shop.money_format | escape }}"
+  data-hide-theme-qty="{{ bo_hide_theme_qty }}"
+  data-product-id="{{ product.id }}"
+>
+  {%- if bo_heading != blank -%}
+    <div class="bo__heading"><span>{{ bo_heading }}</span></div>
+  {%- endif -%}
+
+  <div class="bo__list" role="radiogroup" aria-label="{{ bo_heading | default: 'Paket seçimi' | escape }}">
+    {%- for bo_line in bo_lines -%}
+      {%- liquid
+        assign bo_f = bo_line | split: '~'
+        assign bo_qty = bo_f[0] | strip | plus: 0
+        if bo_qty < 1
+          continue
+        endif
+        assign bo_title = bo_f[1] | strip
+        assign bo_sub = bo_f[2] | strip
+        assign bo_discount = bo_f[3] | strip | default: '0' | times: 100 | round
+        assign bo_top = bo_f[4] | strip
+        assign bo_banner = bo_f[5] | strip
+        assign bo_badge_on = bo_f[6] | strip | downcase
+
+        assign bo_unit = bo_variant.price
+        assign bo_unit_compare = bo_variant.compare_at_price | default: bo_variant.price
+        if bo_unit_compare < bo_unit
+          assign bo_unit_compare = bo_unit
+        endif
+
+        assign bo_price = bo_unit | times: bo_qty | minus: bo_discount
+        if bo_price < 0
+          assign bo_price = 0
+        endif
+        assign bo_compare = bo_unit_compare | times: bo_qty
+        assign bo_per = bo_price | times: 1.0 | divided_by: bo_qty | round
+        assign bo_save = bo_compare | minus: bo_price
+        assign bo_pct = 0
+        if bo_compare > 0
+          assign bo_pct = bo_save | times: 100.0 | divided_by: bo_compare | round
+        endif
+
+        assign bo_per_money = bo_per | money
+        assign bo_sub = bo_sub | replace: '[birim]', bo_per_money | replace: '[adet]', bo_qty
+
+        assign bo_selected = false
+        if bo_qty == bo_default_qty
+          assign bo_selected = true
+        endif
+      -%}
+      <label
+        class="bo-card{% if bo_top != blank %} bo-card--featured{% endif %}{% if bo_selected %} is-selected{% endif %}"
+        data-qty="{{ bo_qty }}"
+        data-discount="{{ bo_discount }}"
+        data-save="{{ bo_save }}"
+      >
+        {%- if bo_top != blank -%}
+          <span class="bo-card__top">{{ bo_top }}</span>
+        {%- endif -%}
+
+        <span class="bo-card__main">
+          <input
+            class="bo-card__input"
+            type="radio"
+            name="{{ bo_uid }}-choice"
+            value="{{ bo_qty }}"
+            {% if bo_selected %}checked{% endif %}
+          >
+          <span class="bo-card__radio" aria-hidden="true"></span>
+
+          <span class="bo-card__info">
+            <span class="bo-card__title">
+              <span>{{ bo_title }}</span>
+              {%- if bo_badge_on == 'evet' -%}
+                <span class="bo-card__badge" data-badge data-template="{{ bo_badge_text | escape }}"
+                  {% if bo_pct <= 0 %}hidden{% endif %}>
+                  {{- bo_badge_text | replace: '[yuzde]', bo_pct -}}
+                </span>
+              {%- endif -%}
+            </span>
+            {%- if bo_sub != blank -%}
+              <span class="bo-card__sub" data-sub data-template="{{ bo_f[2] | strip | escape }}">{{ bo_sub }}</span>
+            {%- endif -%}
+          </span>
+
+          <span class="bo-card__prices">
+            <span class="bo-card__price" data-price>{{ bo_price | money }}</span>
+            <s class="bo-card__compare" data-compare {% if bo_compare <= bo_price %}hidden{% endif %}>
+              {{- bo_compare | money -}}
+            </s>
+          </span>
+        </span>
+
+        {%- if bo_banner != blank -%}
+          <span class="bo-card__banner">
+            <svg class="bo-card__truck" viewBox="0 0 64 40" aria-hidden="true" focusable="false">
+              <rect x="2" y="6" width="36" height="24" rx="3" fill="#d9b48a"/>
+              <rect x="2" y="6" width="36" height="7" rx="3" fill="#c49a6c"/>
+              <text x="20" y="25" text-anchor="middle" font-family="Arial, sans-serif" font-weight="700" font-size="9" fill="#fff">FREE</text>
+              <path d="M38 13h12l8 9v8H38z" fill="#7fb2e5"/>
+              <path d="M42 16h7l5 6H42z" fill="#d7ecff"/>
+              <rect x="2" y="29" width="56" height="3" rx="1.5" fill="#5b8fc7"/>
+              <circle cx="14" cy="33" r="5" fill="#334155"/><circle cx="14" cy="33" r="2" fill="#cbd5e1"/>
+              <circle cx="48" cy="33" r="5" fill="#334155"/><circle cx="48" cy="33" r="2" fill="#cbd5e1"/>
+            </svg>
+            <span>{{ bo_banner }}</span>
+          </span>
+        {%- endif -%}
+      </label>
+    {%- endfor -%}
+  </div>
+
+  {%- if bo_savings_text != blank -%}
+    {%- liquid
+      assign bo_parts = bo_savings_text | split: '[tutar]'
+    -%}
+    <div class="bo__savings" data-savings-box>
+      <svg class="bo__arrow" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M4 12h15M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>
+        {{- bo_parts[0] -}}<strong class="bo__savings-amount" data-savings></strong>{{- bo_parts[1] -}}
+      </span>
+    </div>
+  {%- endif -%}
+
+  {%- comment -%} Varyant fiyatları (JS için) {%- endcomment -%}
+  <script type="application/json" data-variants>
+    [
+      {%- for v in product.variants -%}
+        {"id":{{ v.id }},"price":{{ v.price }},"compare_at_price":{{ v.compare_at_price | default: 0 }}}{% unless forloop.last %},{% endunless %}
+      {%- endfor -%}
+    ]
+  </script>
+</div>
+
+{%- if bo_hide_theme_qty -%}
+  <style>
+    /* Temanın kendi adet seçicisini gizle (Dawn ve türevleri) */
+    .product-form__quantity,
+    .product__info-container .quantity-input-wrapper { display: none !important; }
+  </style>
+{%- endif -%}
+
+<style>
+  .bo {
+    --bo-pink: #e23fa3;
+    --bo-pink-soft: #ee74c4;
+    --bo-pink-line: #f2b6d3;
+    --bo-cream: #fcefe3;
+    --bo-peach: #f3cba3;
+    --bo-text: #111;
+    --bo-muted: #5f5f5f;
+    --bo-radius: 12px;
+    margin: 1.2rem 0 1.6rem;
+    font-family: inherit;
+    color: var(--bo-text);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .bo *, .bo *::before, .bo *::after { box-sizing: border-box; }
+
+  .bo__heading {
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 14px;
+    font-weight: 700; font-size: 16px; line-height: 1.2; text-align: center;
+  }
+  .bo__heading::before, .bo__heading::after {
+    content: ""; flex: 1 1 0; height: 2px; background: #f2c2e2; border-radius: 2px;
+  }
+  .bo__heading span { flex: 0 1 auto; }
+
+  .bo__list { display: flex; flex-direction: column; gap: 12px; }
+
+  /* ---------- Kart ---------- */
+  .bo-card {
+    position: relative; display: block; cursor: pointer; user-select: none;
+    background: var(--bo-cream);
+    border: 1.5px solid var(--bo-pink-line);
+    border-radius: var(--bo-radius);
+    overflow: hidden;
+    transition: border-color .15s ease, background-color .15s ease, box-shadow .15s ease;
+  }
+  .bo-card:hover { border-color: var(--bo-pink-soft); }
+  .bo-card.is-selected {
+    background: #fff;
+    border: 2.5px solid var(--bo-pink);
+  }
+
+  .bo-card__main {
+    position: relative;
+    display: flex; align-items: center; gap: 14px;
+    padding: 16px 16px;
+    min-height: 74px;
+  }
+
+  .bo-card__input {
+    position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; pointer-events: none;
+  }
+  .bo-card__radio {
+    flex: 0 0 auto;
+    width: 22px; height: 22px; border-radius: 50%;
+    border: 2px solid var(--bo-pink-line); background: #fff;
+    position: relative; transition: border-color .15s ease;
+  }
+  .bo-card.is-selected .bo-card__radio { border-color: var(--bo-pink); }
+  .bo-card.is-selected .bo-card__radio::after {
+    content: ""; position: absolute; inset: 3px; border-radius: 50%; background: var(--bo-pink);
+  }
+  .bo-card__input:focus-visible + .bo-card__radio { outline: 2px solid var(--bo-pink); outline-offset: 3px; }
+
+  .bo-card__info { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+  .bo-card__title {
+    display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px;
+    font-size: 19px; font-weight: 500; line-height: 1.2;
+  }
+  .bo-card__badge {
+    display: inline-block; padding: 3px 9px; border-radius: 9px;
+    background: var(--bo-pink-soft); color: var(--bo-text);
+    font-size: 12px; font-weight: 500; letter-spacing: .02em; line-height: 1.3; white-space: nowrap;
+  }
+  .bo-card__badge[hidden] { display: none; }
+  .bo-card__sub { font-size: 14px; color: var(--bo-muted); line-height: 1.3; }
+
+  .bo-card__prices {
+    flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; text-align: right;
+  }
+  .bo-card__price { font-size: 19px; font-weight: 500; line-height: 1.2; white-space: nowrap; }
+  .bo-card__compare { font-size: 14px; color: var(--bo-muted); line-height: 1.2; white-space: nowrap; }
+  .bo-card__compare[hidden] { display: none; }
+
+  /* ---------- Öne çıkan kart (üst etiket + alt şerit) ---------- */
+  .bo-card--featured,
+  .bo-card--featured.is-selected { background: var(--bo-pink-soft); }
+  .bo-card__top {
+    display: block; text-align: center;
+    padding: 5px 10px 4px;
+    font-size: 12.5px; font-weight: 700; line-height: 1.2; color: var(--bo-text);
+  }
+  .bo-card--featured .bo-card__main {
+    background: var(--bo-cream);
+    border-radius: var(--bo-radius) var(--bo-radius) 0 0;
+  }
+  .bo-card--featured.is-selected .bo-card__main { background: #fff; }
+
+  .bo-card__banner {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 16px;
+    background: var(--bo-peach);
+    font-size: 13.5px; font-weight: 700; line-height: 1.25;
+    transition: background-color .15s ease;
+  }
+  .bo-card.is-selected .bo-card__banner { background: var(--bo-pink); }
+  .bo-card__truck { flex: 0 0 auto; width: 38px; height: 24px; }
+
+  /* ---------- Tasarruf kutusu ---------- */
+  .bo__savings {
+    display: flex; align-items: center; gap: 10px;
+    margin-top: 14px; padding: 14px 16px;
+    background: var(--bo-cream);
+    border: 1.5px solid var(--bo-peach);
+    border-radius: var(--bo-radius);
+    font-size: 15px; line-height: 1.3;
+  }
+  .bo__savings[hidden] { display: none; }
+  .bo__arrow { flex: 0 0 auto; width: 18px; height: 18px; color: var(--bo-pink); }
+  .bo__savings-amount { color: var(--bo-pink); font-weight: 500; }
+
+  /* ---------- Mobil ---------- */
+  @media (max-width: 480px) {
+    .bo__heading { font-size: 15px; gap: 10px; }
+    .bo__list { gap: 10px; }
+    .bo-card__main { gap: 11px; padding: 13px 12px; min-height: 66px; }
+    .bo-card__radio { width: 20px; height: 20px; }
+    .bo-card__title { font-size: 17px; gap: 4px 8px; }
+    .bo-card__badge { font-size: 11px; padding: 2px 7px; }
+    .bo-card__sub { font-size: 13px; }
+    .bo-card__price { font-size: 17px; }
+    .bo-card__compare { font-size: 13px; }
+    .bo-card__banner { padding: 9px 12px; font-size: 12.5px; gap: 8px; }
+    .bo-card__truck { width: 32px; height: 20px; }
+    .bo__savings { font-size: 14px; padding: 12px 13px; }
+  }
+  @media (max-width: 340px) {
+    .bo-card__title { font-size: 15.5px; }
+    .bo-card__price { font-size: 15.5px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .bo-card, .bo-card__radio, .bo-card__banner { transition: none; }
+  }
+</style>
+
+<script>
+  (function () {
+    var root = document.getElementById({{ bo_uid | json }});
+    if (!root || root.dataset.boReady) return;
+    root.dataset.boReady = '1';
+
+    var moneyFormat = root.dataset.moneyFormat || '{{ "{{" }}amount}}';
+    var cards = Array.prototype.slice.call(root.querySelectorAll('.bo-card'));
+    var variants = [];
+    try { variants = JSON.parse(root.querySelector('[data-variants]').textContent); } catch (e) {}
+
+    /* ---------- Para formatı (Shopify money_format ile birebir) ---------- */
+    function formatMoney(cents, format) {
+      cents = Math.round(Number(cents) || 0);
+      format = format || '{{ "{{" }}amount}}';
+      function delimit(n, precision, thousands, decimal) {
+        thousands = thousands == null ? ',' : thousands;
+        decimal = decimal == null ? '.' : decimal;
+        var num = (n / 100).toFixed(precision);
+        var parts = num.split('.');
+        var dollars = parts[0].replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1' + thousands);
+        return dollars + (parts[1] ? decimal + parts[1] : '');
+      }
+      return format.replace(/\{\{\s*(\w+)\s*\}\}/, function (_, key) {
+        switch (key) {
+          case 'amount': return delimit(cents, 2);
+          case 'amount_no_decimals': return delimit(cents, 0);
+          case 'amount_with_comma_separator': return delimit(cents, 2, '.', ',');
+          case 'amount_no_decimals_with_comma_separator': return delimit(cents, 0, '.', ',');
+          case 'amount_with_apostrophe_separator': return delimit(cents, 2, "'", '.');
+          case 'amount_with_space_separator': return delimit(cents, 2, ' ', ',');
+          case 'amount_no_decimals_with_space_separator': return delimit(cents, 0, ' ', ',');
+          default: return delimit(cents, 2);
+        }
+      });
+    }
+
+    /* ---------- Ürün formunu bul ---------- */
+    function findForm() {
+      var scopes = [
+        root.closest('product-info'),
+        root.closest('[id^="MainProduct-"]'),
+        root.closest('.product'),
+        root.closest('section'),
+        document
+      ];
+      for (var i = 0; i < scopes.length; i++) {
+        if (!scopes[i]) continue;
+        var forms = scopes[i].querySelectorAll('form[action*="/cart/add"]');
+        for (var j = 0; j < forms.length; j++) {
+          var f = forms[j];
+          if (/installment/i.test(f.getAttribute('id') || '')) continue;
+          if (f.querySelector('[name="id"]')) return f;
+        }
+      }
+      return null;
+    }
+
+    function getQtyInputs(form) {
+      var list = [];
+      if (form) {
+        list = Array.prototype.slice.call(form.querySelectorAll('input[name="quantity"]'));
+        var fid = form.getAttribute('id');
+        if (fid) {
+          list = list.concat(Array.prototype.slice.call(
+            document.querySelectorAll('input[name="quantity"][form="' + fid + '"]')
+          ));
+        }
+      }
+      return list;
+    }
+
+    function setQuantity(qty) {
+      var form = findForm();
+      if (!form) return;
+      var inputs = getQtyInputs(form);
+      var real = inputs.filter(function (i) { return !i.hasAttribute('data-bo-qty'); });
+      if (real.length) {
+        inputs.forEach(function (i) { if (i.hasAttribute('data-bo-qty')) i.remove(); });
+        inputs = real;
+      }
+      if (!inputs.length) {
+        var hidden = document.createElement('input');
+        hidden.type = 'hidden';
+        hidden.name = 'quantity';
+        hidden.setAttribute('data-bo-qty', '');
+        form.appendChild(hidden);
+        inputs = [hidden];
+      }
+      inputs.forEach(function (inp) {
+        if (inp.hasAttribute('min') && Number(inp.min) > qty) inp.min = 1;
+        if (inp.hasAttribute('max') && inp.max !== '' && Number(inp.max) < qty) inp.removeAttribute('max');
+        inp.value = qty;
+        inp.dispatchEvent(new Event('input', { bubbles: true }));
+        inp.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+    }
+
+    /* ---------- Fiyatları seçili varyanta göre güncelle ---------- */
+    function currentVariant() {
+      var form = findForm();
+      var idInput = form && form.querySelector('[name="id"]');
+      var id = idInput ? Number(idInput.value) : null;
+      for (var i = 0; i < variants.length; i++) if (variants[i].id === id) return variants[i];
+      return variants[0];
+    }
+
+    function render() {
+      var v = currentVariant();
+      if (!v) return;
+      var unit = v.price;
+      var unitCompare = Math.max(v.compare_at_price || 0, unit);
+
+      cards.forEach(function (card) {
+        var qty = Number(card.dataset.qty);
+        var discount = Number(card.dataset.discount) || 0;
+        var price = Math.max(unit * qty - discount, 0);
+        var compare = unitCompare * qty;
+        var save = compare - price;
+        var pct = compare > 0 ? Math.round(save * 100 / compare) : 0;
+        card.dataset.save = save;
+
+        var priceEl = card.querySelector('[data-price]');
+        var compareEl = card.querySelector('[data-compare]');
+        var badge = card.querySelector('[data-badge]');
+        var sub = card.querySelector('[data-sub]');
+
+        if (priceEl) priceEl.textContent = formatMoney(price, moneyFormat);
+        if (compareEl) {
+          compareEl.textContent = formatMoney(compare, moneyFormat);
+          compareEl.hidden = compare <= price;
+        }
+        if (badge) {
+          badge.textContent = badge.dataset.template.replace('[yuzde]', pct);
+          badge.hidden = pct <= 0;
+        }
+        if (sub && sub.dataset.template) {
+          sub.textContent = sub.dataset.template
+            .replace('[birim]', formatMoney(Math.round(price / qty), moneyFormat))
+            .replace('[adet]', qty);
+        }
+      });
+      updateSavings();
+    }
+
+    function updateSavings() {
+      var box = root.querySelector('[data-savings-box]');
+      if (!box) return;
+      var sel = root.querySelector('.bo-card.is-selected');
+      var save = sel ? Number(sel.dataset.save) : 0;
+      box.querySelector('[data-savings]').textContent = formatMoney(save, moneyFormat);
+      box.hidden = !(save > 0);
+    }
+
+    function select(card, syncQty) {
+      cards.forEach(function (c) {
+        var on = c === card;
+        c.classList.toggle('is-selected', on);
+        var input = c.querySelector('.bo-card__input');
+        if (input) input.checked = on;
+      });
+      updateSavings();
+      if (syncQty !== false) setQuantity(Number(card.dataset.qty));
+    }
+
+    cards.forEach(function (card) {
+      var input = card.querySelector('.bo-card__input');
+      input.addEventListener('change', function () { if (input.checked) select(card); });
+    });
+
+    /* Varyant değişimlerini yakala (Dawn ve çoğu tema "change" event'i yayar) */
+    var t;
+    function scheduleRender() { clearTimeout(t); t = setTimeout(render, 60); }
+    document.addEventListener('change', function (e) {
+      if (root.contains(e.target)) return;
+      scheduleRender();
+    });
+    document.addEventListener('variant:change', scheduleRender);
+    document.addEventListener('product-info:loaded', scheduleRender);
+
+    /* Dawn v13+ ürün bilgisini yeniden çizdiğinde formu tekrar bağla */
+    var formObserverTarget = root.closest('product-info') || root.closest('section') || document.body;
+    if (window.MutationObserver) {
+      new MutationObserver(function (muts) {
+        var outside = muts.some(function (m) { return !root.contains(m.target); });
+        if (!outside) return;
+        var sel = root.querySelector('.bo-card.is-selected');
+        var form = findForm();
+        if (!sel || !form) return;
+        var inputs = getQtyInputs(form);
+        var want = String(sel.dataset.qty);
+        var mismatch = !inputs.length || inputs.some(function (i) { return String(i.value) !== want; });
+        if (mismatch) setQuantity(Number(want));
+        scheduleRender();
+      }).observe(formObserverTarget, { childList: true, subtree: true });
+    }
+
+    /* Sayfa yüklenince (form snippet'ten sonra geldiği için DOM hazır olunca) */
+    function init() {
+      var initial = root.querySelector('.bo-card.is-selected') || cards[0];
+      if (initial) select(initial);
+      render();
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+    else init();
+  })();
+</script>
+{%- endif -%}
