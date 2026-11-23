@@ -565,6 +565,114 @@
       }).observe(formObserverTarget, { childList: true, subtree: true });
     }
 
+    /* ================================================================
+       SEPETE EKLE: seçili paketin adedi HER ZAMAN sepete gönderilir.
+       1) Form gönderilmeden hemen önce adet alanları güncellenir.
+       2) Tema kendi AJAX isteğini (fetch / XHR) oluştursa bile
+          /cart/add isteğindeki adet, seçili paket adedine çevrilir.
+       ================================================================ */
+    function selectedQty() {
+      var sel = root.querySelector('.bo-card.is-selected');
+      return sel ? Number(sel.dataset.qty) : null;
+    }
+
+    function syncBeforeAdd(e) {
+      var form = findForm();
+      if (!form) return;
+      var t = e.target;
+      var related = t === form || form.contains(t) ||
+        (t.getAttribute && t.getAttribute('form') === form.getAttribute('id'));
+      if (!related) return;
+      var q = selectedQty();
+      if (q) setQuantity(q);
+    }
+    document.addEventListener('submit', syncBeforeAdd, true);
+    document.addEventListener('click', function (e) {
+      var btn = e.target.closest && e.target.closest('button, input[type="submit"], [name="add"]');
+      if (btn) syncBeforeAdd({ target: btn });
+    }, true);
+
+    var registry = window.__boBundles = window.__boBundles || [];
+    registry.push({
+      ids: variants.map(function (v) { return String(v.id); }),
+      qty: selectedQty
+    });
+
+    if (!window.__boCartPatched) {
+      window.__boCartPatched = true;
+
+      var isCartAdd = function (url) {
+        try { url = String(url && url.url ? url.url : url); } catch (e) { return false; }
+        return /\/cart\/add(\.js|\.json)?(\?|#|$)/.test(url.split('?')[0] + (url.indexOf('?') > -1 ? '?' : ''));
+      };
+      var qtyFor = function (id) {
+        id = String(id);
+        for (var i = 0; i < registry.length; i++) {
+          if (registry[i].ids.indexOf(id) > -1) return registry[i].qty();
+        }
+        return null;
+      };
+      var fixParams = function (p) {
+        var q = qtyFor(p.get('id'));
+        if (q) p.set('quantity', q);
+        if (p.has('items[0][id]') && !p.has('items[1][id]')) {
+          var q2 = qtyFor(p.get('items[0][id]'));
+          if (q2) p.set('items[0][quantity]', q2);
+        }
+        return p;
+      };
+      var fixBody = function (body) {
+        try {
+          if (typeof FormData !== 'undefined' && body instanceof FormData) return fixParams(body);
+          if (typeof URLSearchParams !== 'undefined' && body instanceof URLSearchParams) return fixParams(body);
+          if (typeof body === 'string') {
+            var s = body.trim();
+            if (s.charAt(0) === '{') {
+              var obj = JSON.parse(s);
+              if (obj.items && obj.items.length) {
+                obj.items.forEach(function (it) {
+                  if (it.properties && it.properties._bo_skip) return;
+                  var qi = qtyFor(it.id);
+                  if (qi) it.quantity = qi;
+                });
+              } else if (obj.id != null) {
+                var qo = qtyFor(obj.id);
+                if (qo) obj.quantity = qo;
+              }
+              return JSON.stringify(obj);
+            }
+            return fixParams(new URLSearchParams(s)).toString();
+          }
+        } catch (err) {}
+        return body;
+      };
+
+      if (window.fetch) {
+        var origFetch = window.fetch;
+        window.fetch = function (input, init) {
+          try {
+            if (isCartAdd(input) && init && init.body != null) {
+              init = Object.assign({}, init, { body: fixBody(init.body) });
+            }
+          } catch (e) {}
+          return origFetch.call(this, input, init);
+        };
+      }
+
+      if (window.XMLHttpRequest) {
+        var origOpen = XMLHttpRequest.prototype.open;
+        var origSend = XMLHttpRequest.prototype.send;
+        XMLHttpRequest.prototype.open = function (method, url) {
+          this.__boCartAdd = isCartAdd(url);
+          return origOpen.apply(this, arguments);
+        };
+        XMLHttpRequest.prototype.send = function (body) {
+          if (this.__boCartAdd && body != null) body = fixBody(body);
+          return origSend.call(this, body);
+        };
+      }
+    }
+
     /* Sayfa yüklenince (form snippet'ten sonra geldiği için DOM hazır olunca) */
     function init() {
       var initial = root.querySelector('.bo-card.is-selected') || cards[0];
